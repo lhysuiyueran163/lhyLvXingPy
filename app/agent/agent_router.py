@@ -96,7 +96,7 @@ def get_tools():
 def health():
     return {
         "status": "ok",
-        "service": "旅途 AI 旅行规划助手",
+        "service": "lhy旅行AI后端服务 旅行规划助手",
         "llmProvider": config.llm["provider"],
         "model": config.llm["model"],
         "time": datetime.now().isoformat(),

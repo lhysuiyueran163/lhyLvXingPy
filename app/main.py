@@ -11,7 +11,7 @@ from app.tools.tools_router import router as tools_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    print(f"\n旅途 AI 服务已启动：http://localhost:{config.server.port}")
+    print(f"\nlhy旅行AI后端服务 服务已启动：http://localhost:{config.server.port}")
     print(f"   前端地址：{config.server.cors_origin}\n")
     yield
 
