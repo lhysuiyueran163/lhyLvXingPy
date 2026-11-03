@@ -1,0 +1,94 @@
+import math
+
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+
+class PackingInput(BaseModel):
+    destination: str = Field(description="目的地")
+    days: int = Field(description="旅行天数")
+    season: str = Field(description="季节：夏/冬/春/秋，或描述气候")
+    activities: list[str] | None = Field(default=None, description="活动类型：海滩/徒步/购物/文化参观等")
+
+
+@tool("generate_packing_list", args_schema=PackingInput)
+def packing_tool(destination: str, days: int, season: str, activities: list[str] | None = None) -> str:
+    """根据目的地、天数、季节和活动生成个性化打包清单。用户询问带什么行李时调用。"""
+    activities = activities or []
+    is_warm = any(
+        k in season or k in destination or any(k in a for a in activities)
+        for k in ["夏", "热带", "海滩", "东南亚"]
+    )
+    has_beach = any(a in ["海滩", "潜水", "冲浪", "游泳"] for a in activities)
+    has_hike = any(a in ["徒步", "爬山", "登山"] for a in activities)
+
+    clothing = (
+        [
+            f"✅ 短袖T恤 × {math.ceil(days * 0.7)} 件",
+            "✅ 短裤 × 2-3 条",
+            "✅ 轻薄长裤 × 1（参观寺庙必备）",
+            "✅ 舒适运动鞋",
+            "✅ 凉鞋/拖鞋",
+            "✅ 薄外套（商场/飞机冷气足）",
+            *(["✅ 泳衣 × 2套", "✅ 防晒衣"] if has_beach else []),
+        ]
+        if is_warm
+        else [
+            f"✅ 上衣 × {math.ceil(days * 0.6)} 件",
+            f"✅ 裤子 × {math.ceil(days * 0.4)} 条",
+            "✅ 厚外套/羽绒服",
+            "✅ 保暖内衣",
+            "✅ 围巾、手套、帽子",
+            "✅ 防水靴子",
+        ]
+    )
+
+    items: dict[str, list[str]] = {
+        "📄 证件与财务": [
+            "✅ 护照（确认有效期6个月以上）",
+            "✅ 签证（如需要）",
+            "✅ 机票/酒店订单打印版",
+            "✅ 信用卡（建议带VISA或万事达）",
+            "✅ 少量当地现金",
+            "✅ 旅行保险单",
+        ],
+        "📱 电子设备": [
+            "✅ 手机 + 充电线",
+            "✅ 充电宝（不超过20000mAh，飞机可带）",
+            "✅ 转换插头（各国插座不同，非常重要！）",
+            "✅ 相机（如需要）",
+            "✅ 耳机",
+        ],
+        "👕 衣物": clothing,
+        "🧴 洗漱护肤": [
+            "✅ 洗漱套装（100ml以内）",
+            "✅ 防晒霜 SPF50+（热带必备）",
+            "✅ 保湿乳液",
+            "✅ 湿纸巾 & 纸巾",
+        ],
+        "💊 药品": [
+            "✅ 创可贴、消炎药",
+            "✅ 肠胃药（诺氟沙星）",
+            "✅ 退烧感冒药",
+            *(["✅ 防蚊液（热带必备！）"] if is_warm else []),
+        ],
+        "🎒 旅行小物": [
+            "✅ 充电宝",
+            "✅ 颈枕（长途飞行）",
+            "✅ 密封袋（分装液体）",
+            "✅ 可折叠购物袋",
+            *(["✅ 登山杖", "✅ 防水背包"] if has_hike else []),
+        ],
+    }
+
+    result = "\n\n".join(f"**{cat}**\n" + "\n".join(its) for cat, its in items.items())
+
+    return f"""🎒 **{destination} {days}天打包清单**（{season}季）
+
+{result}
+
+**💡 打包建议：**
+- 衣物按天数×0.7原则，避免过多
+- 液体单瓶不超过100ml，放透明密封袋
+- 贵重物品随身携带，不托运
+- 留20%行李空间用于购物"""
